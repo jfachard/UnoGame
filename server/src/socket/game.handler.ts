@@ -295,6 +295,7 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
       }
 
       player.saidUno = true;
+      player.canBeChallenged = false;
 
       console.log(`Player ${player.name} said UNO in room ${roomId}`);
 
@@ -333,8 +334,10 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
 
       console.log(`Player ${challenger.name} challenged ${targetPlayer.name} in room ${roomId}`);
 
-      if (targetPlayer.hand.length === 1 && !targetPlayer.saidUno) {        
+      if (targetPlayer.canBeChallenged && !targetPlayer.saidUno) {        
         gameManager.penaltyDraw(roomId, targetPlayerId, 2);
+
+        targetPlayer.canBeChallenged = false;
 
         console.log(`Challenge successful! ${targetPlayer.name} draws 2 cards`);
 

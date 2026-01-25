@@ -8,6 +8,7 @@ export interface Player {
   isReady: boolean;
   disconnected?: boolean;
   saidUno?: boolean;
+  canBeChallenged?: boolean;
 }
 
 export interface PlayerPublicInfo {
