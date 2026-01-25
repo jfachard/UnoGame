@@ -27,4 +27,5 @@ export interface Card {
   id: string;
   color: CardColor | null;
   value: CardValue;
+  activeColor?: CardColor;
 }

@@ -6,6 +6,8 @@ export interface Player {
   name: string;
   hand: Card[];
   isReady: boolean;
+  disconnected?: boolean;
+  saidUno?: boolean;
 }
 
 export interface PlayerPublicInfo {
@@ -13,6 +15,7 @@ export interface PlayerPublicInfo {
   name: string;
   cardsCount: number;
   isReady: boolean;
+  disconnected?: boolean;
 }
 
 // ===== GAME STATE =====
