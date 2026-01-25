@@ -282,34 +282,129 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
     }
   });
 
-  // ===== SAY UNO (optionnel pour v2) =====
+  // ===== SAY UNO =====
   socket.on(SocketEvents.SAY_UNO, (data: { roomId: string }) => {
-    const { roomId } = data;
+    try {
+      const { roomId } = data;
 
-    const room = gameManager.getRoom(roomId);
-    if (!room) {
-      socket.emit(SocketEvents.ERROR, { message: 'Room not found' });
-      return;
+      const room = gameManager.getRoom(roomId);
+      if (!room) {
+        socket.emit(SocketEvents.ERROR, { message: 'Room not found' });
+        return;
+      }
+      
+      const player = room.players.find(p => p.id === socket.id);
+      if (!player) {
+        socket.emit(SocketEvents.ERROR, { message: 'Player not found' });
+        return;
+      }
+
+      if (player.hand.length !== 1) {
+        socket.emit(SocketEvents.ERROR, { message: 'You can only say UNO when you have 1 card' });
+        return;
+      }
+
+      player.saidUno = true;
+
+      console.log(`Player ${player.name} said UNO in room ${roomId}`);
+
+      io.to(roomId).emit(SocketEvents.PLAYER_SAID_UNO, {
+        playerId: socket.id,
+        playerName: player.name
+      });
+
+    } catch (error: any) {
+      socket.emit(SocketEvents.ERROR, { message: error.message });
     }
-    
-    const player = room.players.find(p => p.id === socket.id);
-    
-    // TODO: Vérifier que le joueur a bien 1 carte
-    // TODO: Marquer player.saidUno = true
-    // TODO: Notifier les autres joueurs
-
   });
 
-  // ===== CHALLENGE UNO (optionnel pour v2) =====
-  socket.on('challenge_uno', (data: { roomId: string; targetPlayerId: string }) => {
+  // ===== CHALLENGE UNO =====
+  socket.on(SocketEvents.CHALLENGE_UNO, (data: { roomId: string; targetPlayerId: string }) => {
     try {
       const { roomId, targetPlayerId } = data;
 
-      // TODO: Implémenter la logique
-      // Un joueur challenge un autre qui n'a pas dit "UNO"
-      // Si valide, le joueur challengé pioche 2 cartes
+      const room = gameManager.getRoom(roomId);
+      if (!room || !room.gameState) {
+        socket.emit(SocketEvents.ERROR, { message: 'Room or game not found' });
+        return;
+      }
 
-      console.log(`Player ${socket.id} challenged ${targetPlayerId} in room ${roomId}`);
+      // Trouver le joueur challengé
+      const targetPlayer = room.players.find(p => p.id === targetPlayerId);
+      if (!targetPlayer) {
+        socket.emit(SocketEvents.ERROR, { message: 'Target player not found' });
+        return;
+      }
+
+      // Trouver le joueur qui challenge
+      const challenger = room.players.find(p => p.id === socket.id);
+      if (!challenger) {
+        socket.emit(SocketEvents.ERROR, { message: 'Challenger not found' });
+        return;
+      }
+
+      console.log(`Player ${challenger.name} challenged ${targetPlayer.name} in room ${roomId}`);
+
+      // Vérifier si le challenge est valide
+      if (targetPlayer.hand.length === 1 && !targetPlayer.saidUno) {
+        // Challenge réussi ! Le joueur challengé pioche 2 cartes
+        const targetPlayerIndex = room.players.findIndex(p => p.id === targetPlayerId);
+        
+        // Utiliser la méthode privée drawCards via une méthode publique
+        // On va créer une méthode penaltyDraw dans GameManager
+        gameManager.penaltyDraw(roomId, targetPlayerId, 2);
+
+        console.log(`Challenge successful! ${targetPlayer.name} draws 2 cards`);
+
+        // Notifier tous les joueurs
+        io.to(roomId).emit(SocketEvents.UNO_CHALLENGE_SUCCESS, {
+          challengerId: socket.id,
+          challengerName: challenger.name,
+          targetId: targetPlayerId,
+          targetName: targetPlayer.name,
+          message: `${targetPlayer.name} forgot to say UNO and draws 2 cards!`
+        });
+
+        // Mettre à jour l'état du jeu
+        room.players.forEach(p => {
+          const playerSocket = io.sockets.sockets.get(p.id);
+          if (playerSocket) {
+            playerSocket.emit(SocketEvents.GAME_STATE_UPDATE, {
+              gameState: {
+                currentPlayerIndex: room.gameState!.currentPlayerIndex,
+                direction: room.gameState!.direction,
+                lastPlayedCard: room.gameState!.lastPlayedCard,
+                deckCount: room.gameState!.deck.length,
+                discardPileCount: room.gameState!.discardPile.length
+              },
+              hand: p.hand,
+              players: room.players.map(player => ({
+                id: player.id,
+                name: player.name,
+                cardsCount: player.hand.length,
+                disconnected: player.disconnected
+              })),
+              lastAction: {
+                type: 'uno_penalty',
+                playerId: targetPlayerId,
+                playerName: targetPlayer.name
+              }
+            });
+          }
+        });
+
+      } else {
+        // Challenge échoué
+        console.log(`Challenge failed! ${targetPlayer.name} had already said UNO or doesn't have 1 card`);
+
+        io.to(roomId).emit(SocketEvents.UNO_CHALLENGE_FAILED, {
+          challengerId: socket.id,
+          challengerName: challenger.name,
+          targetId: targetPlayerId,
+          targetName: targetPlayer.name,
+          message: `Challenge failed! ${targetPlayer.name} had already said UNO.`
+        });
+      }
 
     } catch (error: any) {
       socket.emit(SocketEvents.ERROR, { message: error.message });

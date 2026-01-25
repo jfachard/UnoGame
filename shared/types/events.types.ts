@@ -25,4 +25,6 @@ export enum SocketEvents {
   ERROR = 'error',
   PLAYER_SAID_UNO = 'player_said_uno',
   UNO_PENALTY = 'uno_penalty',
+  UNO_CHALLENGE_SUCCESS = 'uno_challenge_success',
+  UNO_CHALLENGE_FAILED = 'uno_challenge_failed',
 }
