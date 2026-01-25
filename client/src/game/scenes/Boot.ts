@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { connectSocket, socket } from '../../utils/socket';
 
 export class Boot extends Scene
 {
@@ -15,8 +16,28 @@ export class Boot extends Scene
         this.load.image('background', 'assets/bg.png');
     }
 
-    create ()
-    {
-        this.scene.start('Preloader');
+    async create ()
+    {   
+        const connectingText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            'Connecting to server...',
+            {
+                fontSize: '32px',
+                color: '#ffffff'
+            }
+        ).setOrigin(0.5);
+
+        try{
+            await connectSocket();
+            this.registry.set('socket', socket);
+            this.scene.start('Preloader');
+        } catch (error) {
+            connectingText.setText('Connection failed!\nRetry in 3s...');
+            
+            this.time.delayedCall(3000, () => {
+                this.scene.restart();
+            });
+        }
     }
 }
