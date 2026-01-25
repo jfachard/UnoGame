@@ -341,6 +341,12 @@ export class GameManager {
   private nextTurn(room: GameRoom): void {
     if (!room.gameState) return;
 
+    room.players.forEach(p => {
+      if (p.hand.length !== 1) {
+        p.canBeChallenged = false;
+      }
+    });
+
     const { direction, currentPlayerIndex } = room.gameState;
     let nextIndex = currentPlayerIndex + direction;
 
@@ -535,8 +541,13 @@ export class GameManager {
 
     player.hand.splice(cardIndex, 1);
 
-    if (player.hand.length !== 1) {
+    if (player.hand.length === 1) {
+      if (!player.saidUno) {
+        player.canBeChallenged = true;
+      }
+    } else {
       player.saidUno = false;
+      player.canBeChallenged = false;
     }
 
     if (
