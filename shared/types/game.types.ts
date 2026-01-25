@@ -7,6 +7,7 @@ export interface Player {
   hand: Card[];
   isReady: boolean;
   disconnected?: boolean;
+  saidUno?: boolean;
 }
 
 export interface PlayerPublicInfo {

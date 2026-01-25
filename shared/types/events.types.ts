@@ -8,6 +8,8 @@ export enum SocketEvents {
   PLAY_CARD = 'play_card',
   DRAW_CARD = 'draw_card',
   PASS_TURN = 'pass_turn',
+  SAY_UNO = 'say_uno',
+  CHALLENGE_UNO = 'challenge_uno',
   
   // Server → Client
   CREATE_ROOM_SUCCESS = 'create_room_success',
@@ -20,5 +22,7 @@ export enum SocketEvents {
   GAME_STARTED = 'game_started',
   GAME_OVER = 'game_over',
   INVALID_MOVE = 'invalid_move',
-  ERROR = 'error'
+  ERROR = 'error',
+  PLAYER_SAID_UNO = 'player_said_uno',
+  UNO_PENALTY = 'uno_penalty',
 }
