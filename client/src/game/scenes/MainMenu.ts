@@ -1,18 +1,26 @@
-// src/game/scenes/MainMenu.ts
 import { Scene } from 'phaser';
 import { Socket } from 'socket.io-client';
 
 export class MainMenu extends Scene {
   private socket!: Socket;
+  private playerNameInput!: Phaser.GameObjects.DOMElement;
+  private playerName: string = '';
 
   constructor() {
     super('MainMenu');
   }
 
+  preload() {
+    this.load.setPath('assets');
+
+    this.load.image('logo', 'Carta_logo.png');
+    this.load.image('createButton', 'buttons/CreateButton.png');
+    this.load.image('joinButton', 'buttons/JoinButton.png');
+  }
+
   create() {
     const { width, height } = this.scale;
 
-    // 1. Récupérer socket depuis le registry
     this.socket = this.registry.get('socket');
 
     if (!this.socket) {
@@ -22,60 +30,70 @@ export class MainMenu extends Scene {
 
     console.log('Socket ID in MainMenu:', this.socket.id);
 
-    // 2. Background
     this.add.image(width / 2, height / 2, 'background');
 
-    // 3. Logo Carta (en haut)
     this.add.image(width / 2, 150, 'logo').setScale(0.38);
 
-    // 4. Afficher l'ID du socket (pour tester)
-    this.add.text(width / 2, 280, `Socket ID: ${this.socket.id}`, {
-      fontSize: '18px',
-      color: '#ffffff',
-      fontStyle: 'bold'
-    }).setOrigin(0.5).setAlpha(0.7);
-
-    // 5. Bouton "Test Create Room"
-    this.createButton(
-      width / 2,
-      height / 2 + 50,
-      'Test Create Room',
-      () => this.testCreateRoom()
-    );
-
-    // 6. Bouton "Test Join Room"
-    this.createButton(
-      width / 2,
-      height / 2 + 150,
-      'Test Join Room',
-      () => this.testJoinRoom()
-    );
-
-    // 7. Écouter les events du serveur
-    this.setupSocketListeners();
-  }
-
-  createButton(x: number, y: number, text: string, callback: () => void) {
-    // Background du bouton
-    const bg = this.add.rectangle(x, y, 300, 60, 0x3498db)
-      .setInteractive()
-      .on('pointerover', () => bg.setFillStyle(0x2980b9))
-      .on('pointerout', () => bg.setFillStyle(0x3498db))
-      .on('pointerdown', callback);
-
-    // Texte du bouton
-    this.add.text(x, y, text, {
+    // Label pour l'input
+    this.add.text(width / 2, height / 2 - 80, 'Your Name:', {
       fontSize: '24px',
-      color: '#fff',
-      fontFamily: 'Arial',
+      color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    return bg;
+    // Input HTML pour le nom du joueur
+    this.playerNameInput = this.add.dom(width / 2, height / 2 - 30).createFromHTML(`
+      <input 
+        type="text" 
+        id="playerNameInput"
+        placeholder="Enter your name" 
+        maxlength="20"
+        style="
+          width: 300px;
+          padding: 12px 20px;
+          font-size: 18px;
+          border: 3px solid #4169e1;
+          border-radius: 8px;
+          text-align: center;
+          background: rgba(255, 255, 255, 0.95);
+          color: #333;
+          font-family: Arial, sans-serif;
+          font-weight: bold;
+          outline: none;
+        "
+      />
+    `);
+
+    // Récupérer la valeur de l'input
+    const input = this.playerNameInput.node.querySelector('#playerNameInput') as HTMLInputElement;
+    input.addEventListener('input', (e) => {
+      this.playerName = (e.target as HTMLInputElement).value;
+    });
+
+    const createButton = this.add.image(
+      width / 2,
+      height / 2 + 80,
+      'createButton'
+    ).setInteractive({ useHandCursor: true }).setScale(1.5);
+
+    createButton.on('pointerover', () => createButton.setTint(0xcccccc));
+    createButton.on('pointerout', () => createButton.clearTint());
+    createButton.on('pointerdown', () => this.testCreateRoom());
+
+    const joinButton = this.add.image(
+      width / 2,
+      height / 2 + 180,
+      'joinButton'
+    ).setInteractive({ useHandCursor: true }).setScale(1.5);
+
+    joinButton.on('pointerover', () => joinButton.setTint(0xcccccc));
+    joinButton.on('pointerout', () => joinButton.clearTint());
+    joinButton.on('pointerdown', () => this.testJoinRoom());
+
+    this.setupSocketListeners();
   }
 
   setupSocketListeners() {
-    // Écouter la réponse de create_room
     this.socket.on('create_room_success', (data) => {
       console.log('✅ Room created:', data);
       alert(`Room created! ID: ${data.room.id}`);
@@ -86,7 +104,6 @@ export class MainMenu extends Scene {
       alert(`Error: ${data.message}`);
     });
 
-    // Écouter la réponse de join_room
     this.socket.on('player_joined', (data) => {
       console.log('✅ Player joined:', data);
       alert(`Joined room! Players: ${data.room.players.length}`);
@@ -99,8 +116,8 @@ export class MainMenu extends Scene {
   }
 
   testCreateRoom() {
+    const playerName = this.playerName.trim() || 'Player' + Math.floor(Math.random() * 100);
     const roomId = 'test-room-' + Math.floor(Math.random() * 1000);
-    const playerName = 'Player' + Math.floor(Math.random() * 100);
 
     console.log('📤 Emitting create_room:', { roomId, playerName });
 
@@ -112,10 +129,9 @@ export class MainMenu extends Scene {
   }
 
   testJoinRoom() {
+    const playerName = this.playerName.trim() || 'Player' + Math.floor(Math.random() * 100);
     const roomId = prompt('Enter room ID:');
     if (!roomId) return;
-
-    const playerName = 'Player' + Math.floor(Math.random() * 100);
 
     console.log('📤 Emitting join_room:', { roomId, playerName });
 
@@ -125,7 +141,6 @@ export class MainMenu extends Scene {
     });
   }
 
-  // Nettoyer les listeners quand on quitte la scène
   shutdown() {
     this.socket.off('create_room_success');
     this.socket.off('create_room_error');

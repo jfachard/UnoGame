@@ -13,9 +13,13 @@ const config: Phaser.Types.Core.GameConfig = {
     height: 768,
     parent: 'game-container',
     backgroundColor: '#028af8',
+
+    dom: {
+        createContainer: true
+    },
     
     render: {
-        pixelArt: true,  // False car tu n'utilises pas du pixel art strict
+        pixelArt: false,  // False car tu n'utilises pas du pixel art strict
         antialias: false,  // Active l'anti-aliasing
         roundPixels: true // Arrondit les positions pour éviter le flou
     },

@@ -1,5 +1,4 @@
 import { Scene } from 'phaser';
-import { connectSocket, socket } from '../../utils/socket';
 
 export class Boot extends Scene
 {
@@ -10,34 +9,27 @@ export class Boot extends Scene
 
     preload ()
     {
-        //  The Boot Scene is typically used to load in any assets you require for your Preloader, such as a game logo or background.
-        //  The smaller the file size of the assets, the better, as the Boot Scene itself has no preloader.
-
         this.load.image('background', 'assets/bg.png');
+        this.load.image('logo', 'assets/Carta_logo.png');
+        this.load.image('playButton', 'assets/buttons/PlayButton.png');
     }
 
-    async create ()
+    create ()
     {   
-        const connectingText = this.add.text(
-            this.cameras.main.width / 2,
-            this.cameras.main.height / 2,
-            'Connecting to server...',
-            {
-                fontSize: '32px',
-                color: '#ffffff'
-            }
-        ).setOrigin(0.5);
+        const { width, height } = this.scale;
 
-        try{
-            await connectSocket();
-            this.registry.set('socket', socket);
+        this.add.image(width / 2, height / 2, 'background');
+
+        this.add.image(width / 2, height / 2 - 250, 'logo').setScale(0.38);
+
+        const playButton = this.add.image(
+            width / 2,
+            height / 2 + 100,
+            'playButton'
+        ).setInteractive({ useHandCursor: true }).setScale(1.5);
+
+        playButton.on('pointerdown', () => {
             this.scene.start('Preloader');
-        } catch (error) {
-            connectingText.setText('Connection failed!\nRetry in 3s...');
-            
-            this.time.delayedCall(3000, () => {
-                this.scene.restart();
-            });
-        }
+        });
     }
 }
