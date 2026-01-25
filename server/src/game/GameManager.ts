@@ -90,22 +90,18 @@ export class GameManager {
     const playerIndex = room.players.findIndex(p => p.id === playerId);
     if (playerIndex === -1) return;
 
-    // Cas 1: Partie en cours → mode déconnexion temporaire
     if (room.status === 'playing' && room.gameState) {
       this.handlePlayerDisconnect(roomId, playerId);
       return;
     }
 
-    // Cas 2: Lobby (waiting) → retrait immédiat
     room.players.splice(playerIndex, 1);
 
-    // Si la room est vide, on la supprime
     if (room.players.length === 0) {
       this.deleteRoom(roomId);
       return;
     }
 
-    // Si le host quitte, on passe le host au premier joueur
     if (room.hostId === playerId) {
       room.hostId = room.players[0].id;
     }
@@ -208,16 +204,13 @@ export class GameManager {
     const deck: Card[] = [];
     const colors = [CardColor.RED, CardColor.BLUE, CardColor.GREEN, CardColor.YELLOW];
 
-    // 1. Cartes numérotées (0-9)
     colors.forEach(color => {
-      // Une seule carte 0 par couleur
       deck.push({
         id: randomUUID(),
         color,
         value: CardValue.ZERO
       });
 
-      // Deux cartes de 1 à 9 par couleur
       [
         CardValue.ONE, CardValue.TWO, CardValue.THREE, CardValue.FOUR,
         CardValue.FIVE, CardValue.SIX, CardValue.SEVEN, CardValue.EIGHT, CardValue.NINE
@@ -229,7 +222,6 @@ export class GameManager {
       });
     });
 
-    // 2. Cartes spéciales (Skip, Reverse, +2) - 2 par couleur
     colors.forEach(color => {
       [CardValue.SKIP, CardValue.REVERSE, CardValue.DRAW_TWO].forEach(value => {
         deck.push(
@@ -239,7 +231,6 @@ export class GameManager {
       });
     });
 
-    // 3. Wild cards (4 cartes)
     for (let i = 0; i < 4; i++) {
       deck.push({
         id: randomUUID(),
@@ -294,7 +285,6 @@ export class GameManager {
       throw new Error('No valid starting card found in deck');
     }
 
-    // Retire et retourne la carte
     return deck.splice(validStartingCardIndex, 1)[0];
   }
 
@@ -337,7 +327,6 @@ export class GameManager {
     const { direction, currentPlayerIndex } = room.gameState;
     let nextIndex = currentPlayerIndex + direction;
 
-    // Gérer le wrap around
     if (nextIndex < 0) {
       nextIndex = room.players.length - 1;
     } else if (nextIndex >= room.players.length) {
@@ -392,13 +381,11 @@ export class GameManager {
       throw new Error('Cannot start game: not all players ready');
     }
 
-    // 1. Créer et mélanger le deck
     const deck = this.createDeck();
     this.shuffleDeck(deck);
 
     console.log(`Created and shuffled deck with ${deck.length} cards for room ${roomId}`);
 
-    // 2. Initialiser l'état du jeu
     const gameState: GameState = {
       deck,
       discardPile: [],
@@ -409,12 +396,10 @@ export class GameManager {
 
     room.gameState = gameState;
 
-    // 3. Distribuer les cartes
     this.dealCards(room, this.INITIAL_HAND_SIZE);
 
     console.log(`Dealt ${this.INITIAL_HAND_SIZE} cards to each of ${room.players.length} players`);
 
-    // 4. Trouver et placer la première carte
     const startingCard = this.findStartingCard(gameState.deck);
     gameState.discardPile.push(startingCard);
     gameState.lastPlayedCard = startingCard;
@@ -422,10 +407,160 @@ export class GameManager {
     console.log(`Starting card: ${startingCard.value} of ${startingCard.color}`);
     console.log(`Remaining cards in deck: ${gameState.deck.length}`);
 
-    // 5. Marquer la partie comme commencée
     room.status = 'playing';
 
     return gameState;
+  }
+
+  // ===== GAME ACTIONS =====
+
+  /**
+   * Vérifie si c'est le tour du joueur
+   */
+  isPlayerTurn(roomId: string, playerId: string): boolean {
+    const room = this.getRoom(roomId);
+    if (!room || !room.gameState) return false;
+
+    const currentPlayer = room.players[room.gameState.currentPlayerIndex];
+    return currentPlayer.id === playerId;
+  }
+
+  /**
+   * Vérifie si une carte est jouable sur la carte actuelle
+   */
+  canPlayCard(card: Card, currentCard: Card): boolean {
+    // Wild peut toujours être joué
+    if (card.value === CardValue.WILD || card.value === CardValue.WILD_DRAW_FOUR) {
+      return true;
+    }
+
+    // Même couleur ou même valeur
+    return card.color === currentCard.color || card.value === currentCard.value;
+  }
+
+  /**
+   * Joue une carte
+   */
+  playCard(roomId: string, playerId: string, cardId: string, chosenColor?: CardColor): void {
+    const room = this.getRoom(roomId);
+    if (!room || !room.gameState) {
+      throw new Error('Room or game state not found');
+    }
+
+    if (!this.isPlayerTurn(roomId, playerId)) {
+      throw new Error('Not your turn');
+    }
+
+    const playerIndex = room.players.findIndex(p => p.id === playerId);
+    const player = room.players[playerIndex];
+
+    const cardIndex = player.hand.findIndex(c => c.id === cardId);
+    if (cardIndex === -1) {
+      throw new Error('Card not in hand');
+    }
+
+    const card = player.hand[cardIndex];
+
+    if (!this.canPlayCard(card, room.gameState.lastPlayedCard)) {
+      throw new Error('Card cannot be played');
+    }
+
+    // Retirer la carte de la main
+    player.hand.splice(cardIndex, 1);
+
+    // Si Wild, appliquer la couleur choisie
+    if ((card.value === CardValue.WILD || card.value === CardValue.WILD_DRAW_FOUR) && chosenColor) {
+      card.activeColor = chosenColor;
+    }
+
+    // Ajouter à la pile de défausse
+    room.gameState.discardPile.push(card);
+    room.gameState.lastPlayedCard = card;
+
+    // Appliquer les effets de la carte
+    this.applyCardEffect(room, card, playerIndex);
+
+    // Vérifier victoire
+    if (player.hand.length === 0) {
+      room.status = 'finished';
+    }
+  }
+
+  /**
+   * Applique l'effet d'une carte spéciale
+   */
+  private applyCardEffect(room: GameRoom, card: Card, playerIndex: number): void {
+    if (!room.gameState) return;
+
+    switch (card.value) {
+      case CardValue.SKIP:
+        // Skip le prochain joueur
+        this.nextTurn(room);
+        this.nextTurn(room);
+        break;
+
+      case CardValue.REVERSE:
+        // Inverser le sens
+        room.gameState.direction *= -1;
+        this.nextTurn(room);
+        break;
+
+      case CardValue.DRAW_TWO:
+        // Le prochain joueur pioche 2 cartes et passe son tour
+        this.nextTurn(room);
+        this.drawCards(room, room.gameState.currentPlayerIndex, 2);
+        this.nextTurn(room);
+        break;
+
+      case CardValue.WILD_DRAW_FOUR:
+        // Le prochain joueur pioche 4 cartes et passe son tour
+        this.nextTurn(room);
+        this.drawCards(room, room.gameState.currentPlayerIndex, 4);
+        this.nextTurn(room);
+        break;
+
+      default:
+        // Carte normale, juste passer au suivant
+        this.nextTurn(room);
+        break;
+    }
+  }
+
+  /**
+   * Fait piocher une carte à un joueur (action volontaire)
+   */
+  drawCardForPlayer(roomId: string, playerId: string): Card | null {
+    const room = this.getRoom(roomId);
+    if (!room || !room.gameState) {
+      throw new Error('Room or game state not found');
+    }
+
+    if (!this.isPlayerTurn(roomId, playerId)) {
+      throw new Error('Not your turn');
+    }
+
+    const playerIndex = room.players.findIndex(p => p.id === playerId);
+    this.drawCards(room, playerIndex, 1);
+
+    // Retourner la carte piochée (dernière de la main)
+    const player = room.players[playerIndex];
+    return player.hand[player.hand.length - 1] || null;
+  }
+
+  /**
+   * Passe le tour après avoir pioché
+   */
+  passTurnAfterDraw(roomId: string, playerId: string): void {
+    const room = this.getRoom(roomId);
+    if (!room || !room.gameState) {
+      throw new Error('Room or game state not found');
+    }
+
+    if (!this.isPlayerTurn(roomId, playerId)) {
+      throw new Error('Not your turn');
+    }
+
+    this.nextTurn(room);
   }
 
   // ===== UTILS =====
@@ -439,7 +574,6 @@ export class GameManager {
   }
 
   cleanup(): void {
-    // Nettoyer tous les timers en cours
     this.disconnectedPlayers.forEach(timeout => clearTimeout(timeout));
     this.disconnectedPlayers.clear();
   }
