@@ -7,11 +7,9 @@ export function setupSocketHandlers(io: Server, gameManager: GameManager) {
   io.on("connection", (socket: Socket) => {
     console.log("A user connected:", socket.id);
 
-    // Enregistrer les handlers
     registerRoomHandlers(socket, io, gameManager);
     registerGameHandlers(socket, io, gameManager);
 
-    // Gestion de la déconnexion
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
 

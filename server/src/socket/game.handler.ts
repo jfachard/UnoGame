@@ -63,18 +63,15 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
         return;
       }
 
-      // Jouer la carte via le GameManager
       gameManager.playCard(roomId, socket.id, cardId, chosenColor);
 
       const player = room.players.find(p => p.id === socket.id)!;
 
       console.log(`Player ${player.name} played card ${cardId} in room ${roomId}`);
 
-      // Vérifier si le joueur a gagné
       if (room.status === 'finished') {
         console.log(`🏆 Player ${player.name} won the game in room ${roomId}!`);
 
-        // Notifier tous les joueurs de la fin de partie
         io.to(roomId).emit(SocketEvents.GAME_OVER, {
           winnerId: socket.id,
           winnerName: player.name,
@@ -88,7 +85,6 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
         return;
       }
 
-      // Notifier tous les joueurs de l'état mis à jour
       room.players.forEach(p => {
         const playerSocket = io.sockets.sockets.get(p.id);
         if (playerSocket) {
@@ -100,7 +96,7 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
               deckCount: room.gameState!.deck.length,
               discardPileCount: room.gameState!.discardPile.length
             },
-            hand: p.hand, // Chaque joueur reçoit sa propre main
+            hand: p.hand,
             players: room.players.map(player => ({
               id: player.id,
               name: player.name,
@@ -133,7 +129,6 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
         return;
       }
 
-      // Piocher une carte
       const drawnCard = gameManager.drawCardForPlayer(roomId, socket.id);
 
       if (!drawnCard) {
@@ -145,10 +140,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
 
       console.log(`Player ${player.name} drew a card in room ${roomId}`);
 
-      // Vérifier si la carte piochée est jouable
       const canPlay = gameManager.canPlayCard(drawnCard, room.gameState.lastPlayedCard);
 
-      // Notifier le joueur de sa nouvelle carte
       socket.emit(SocketEvents.GAME_STATE_UPDATE, {
         gameState: {
           currentPlayerIndex: room.gameState.currentPlayerIndex,
@@ -173,7 +166,6 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
         }
       });
 
-      // Notifier les autres joueurs (sans montrer la carte)
       room.players.forEach(p => {
         if (p.id !== socket.id) {
           const playerSocket = io.sockets.sockets.get(p.id);
@@ -203,14 +195,12 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
         }
       });
 
-      // Si la carte n'est pas jouable, passer automatiquement au tour suivant
       if (!canPlay) {
         console.log(`Card drawn by ${player.name} is not playable, passing turn...`);
         
         setTimeout(() => {
           gameManager.passTurnAfterDraw(roomId, socket.id);
 
-          // Notifier tout le monde du changement de tour
           io.to(roomId).emit(SocketEvents.GAME_STATE_UPDATE, {
             gameState: {
               currentPlayerIndex: room.gameState!.currentPlayerIndex,
@@ -231,7 +221,7 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
               playerName: player.name
             }
           });
-        }, 1500); // Délai de 1.5s pour que le joueur voie sa carte
+        }, 1500);
       }
 
     } catch (error: any) {
@@ -239,7 +229,7 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
     }
   });
 
-  // ===== PASS TURN (optionnel: si le joueur a pioché une carte jouable mais ne veut pas la jouer) =====
+  // ===== PASS TURN =====
   socket.on('pass_turn', (data: { roomId: string }) => {
     try {
       const { roomId } = data;
@@ -329,14 +319,12 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
         return;
       }
 
-      // Trouver le joueur challengé
       const targetPlayer = room.players.find(p => p.id === targetPlayerId);
       if (!targetPlayer) {
         socket.emit(SocketEvents.ERROR, { message: 'Target player not found' });
         return;
       }
 
-      // Trouver le joueur qui challenge
       const challenger = room.players.find(p => p.id === socket.id);
       if (!challenger) {
         socket.emit(SocketEvents.ERROR, { message: 'Challenger not found' });
@@ -345,18 +333,11 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
 
       console.log(`Player ${challenger.name} challenged ${targetPlayer.name} in room ${roomId}`);
 
-      // Vérifier si le challenge est valide
-      if (targetPlayer.hand.length === 1 && !targetPlayer.saidUno) {
-        // Challenge réussi ! Le joueur challengé pioche 2 cartes
-        const targetPlayerIndex = room.players.findIndex(p => p.id === targetPlayerId);
-        
-        // Utiliser la méthode privée drawCards via une méthode publique
-        // On va créer une méthode penaltyDraw dans GameManager
+      if (targetPlayer.hand.length === 1 && !targetPlayer.saidUno) {        
         gameManager.penaltyDraw(roomId, targetPlayerId, 2);
 
         console.log(`Challenge successful! ${targetPlayer.name} draws 2 cards`);
 
-        // Notifier tous les joueurs
         io.to(roomId).emit(SocketEvents.UNO_CHALLENGE_SUCCESS, {
           challengerId: socket.id,
           challengerName: challenger.name,
@@ -365,7 +346,6 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
           message: `${targetPlayer.name} forgot to say UNO and draws 2 cards!`
         });
 
-        // Mettre à jour l'état du jeu
         room.players.forEach(p => {
           const playerSocket = io.sockets.sockets.get(p.id);
           if (playerSocket) {
@@ -394,7 +374,6 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
         });
 
       } else {
-        // Challenge échoué
         console.log(`Challenge failed! ${targetPlayer.name} had already said UNO or doesn't have 1 card`);
 
         io.to(roomId).emit(SocketEvents.UNO_CHALLENGE_FAILED, {

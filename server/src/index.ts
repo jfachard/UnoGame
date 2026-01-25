@@ -34,6 +34,6 @@ server.listen(PORT, () => {
 // ===== CLEANUP AU SHUTDOWN =====
 process.on('SIGINT', () => {
   console.log('Shutting down server...');
-  gameManager.cleanup(); // Nettoyer les timers de déconnexion
+  gameManager.cleanup();
   process.exit(0);
 });
