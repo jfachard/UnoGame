@@ -3,14 +3,18 @@ import { Game } from './scenes/Game';
 import { GameOver } from './scenes/GameOver';
 import { MainMenu } from './scenes/MainMenu';
 import { Preloader } from './scenes/Preloader';
+import { Lobby } from './scenes/Lobby';
 import Phaser from 'phaser';
 
 //  Find out more information about the Game Config at:
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
-    width: 1444,
-    height: 768,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        width: 1444,
+        height: 768
+    },
     parent: 'game-container',
     backgroundColor: '#028af8',
 
@@ -19,15 +23,16 @@ const config: Phaser.Types.Core.GameConfig = {
     },
     
     render: {
-        pixelArt: false,  // False car tu n'utilises pas du pixel art strict
-        antialias: false,  // Active l'anti-aliasing
-        roundPixels: true // Arrondit les positions pour éviter le flou
+        pixelArt: false,
+        antialias: false,
+        roundPixels: true
     },
     
     scene: [
         Boot,
         Preloader,
         MainMenu,
+        Lobby,
         Game,
         GameOver
     ]
