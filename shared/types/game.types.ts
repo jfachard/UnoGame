@@ -9,6 +9,7 @@ export interface Player {
   disconnected?: boolean;
   saidUno?: boolean;
   canBeChallenged?: boolean;
+  profilePic?: number;
 }
 
 export interface PlayerPublicInfo {
@@ -17,6 +18,7 @@ export interface PlayerPublicInfo {
   cardsCount: number;
   isReady: boolean;
   disconnected?: boolean;
+  profilePic?: number;
 }
 
 // ===== GAME STATE =====
@@ -26,6 +28,14 @@ export interface GameState {
   currentPlayerIndex: number;
   direction: 1 | -1;
   lastPlayedCard: Card;
+}
+
+export interface GameStateClient {
+  currentPlayerIndex: number;
+  direction: 1 | -1;
+  lastPlayedCard: Card;
+  deckCount: number;
+  discardPileCount: number;
 }
 
 // ===== GAME ROOM =====

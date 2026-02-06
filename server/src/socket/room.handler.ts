@@ -85,6 +85,26 @@ export function registerRoomHandlers(socket: Socket, io: Server, gameManager: Ga
       socket.emit(SocketEvents.ERROR, { message: error.message });
     }
   });
+
+  // ===== GET ROOM STATE =====
+  socket.on('get_room_state', (data: { roomId: string }) => {
+    try {
+      const { roomId } = data;
+      const room = gameManager.getRoom(roomId);
+      
+      if (!room) {
+        socket.emit(SocketEvents.ERROR, { message: 'Room not found' });
+        return;
+      }
+
+      socket.emit('room_state', {
+        room: sanitizeRoomForClient(room, socket.id)
+      });
+
+    } catch (error: any) {
+      socket.emit(SocketEvents.ERROR, { message: error.message });
+    }
+  });
 }
 
 // ===== HELPER: Gestion départ joueur =====
@@ -101,7 +121,6 @@ function handlePlayerLeave(socket: Socket, io: Server, gameManager: GameManager,
 
     console.log(`${player.name} (${socket.id}) left room ${roomId}`);
 
-    // Notifier les joueurs restants
     const updatedRoom = gameManager.getRoom(roomId);
     io.to(roomId).emit(SocketEvents.PLAYER_LEFT, {
       playerId: socket.id,

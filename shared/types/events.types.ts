@@ -5,6 +5,7 @@ export enum SocketEvents {
   LEAVE_ROOM = 'leave_room',
   PLAYER_READY = 'player_ready',
   START_GAME = 'start_game',
+  GET_ROOM_STATE = 'get_room_state',
   PLAY_CARD = 'play_card',
   DRAW_CARD = 'draw_card',
   PASS_TURN = 'pass_turn',
@@ -27,4 +28,5 @@ export enum SocketEvents {
   UNO_PENALTY = 'uno_penalty',
   UNO_CHALLENGE_SUCCESS = 'uno_challenge_success',
   UNO_CHALLENGE_FAILED = 'uno_challenge_failed',
+  ROOM_STATE = 'room_state',
 }

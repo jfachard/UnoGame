@@ -39,7 +39,7 @@ export default defineConfig({
         }
     },
     server: {
-        port: 8080
+        port: 5173
     },
     plugins: [
         phasermsg()
