@@ -41,7 +41,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
               id: p.id,
               name: p.name,
               cardsCount: p.hand.length,
-              disconnected: p.disconnected
+              disconnected: p.disconnected,
+              profilePic: p.profilePic
             }))
           });
         }
@@ -78,7 +79,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
           players: room.players.map(p => ({
             id: p.id,
             name: p.name,
-            cardsCount: p.hand.length
+            cardsCount: p.hand.length,
+            profilePic: p.profilePic
           }))
         });
 
@@ -101,7 +103,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
               id: player.id,
               name: player.name,
               cardsCount: player.hand.length,
-              disconnected: player.disconnected
+              disconnected: player.disconnected,
+              profilePic: player.profilePic
             })),
             lastAction: {
               type: 'card_played',
@@ -155,7 +158,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
           id: p.id,
           name: p.name,
           cardsCount: p.hand.length,
-          disconnected: p.disconnected
+          disconnected: p.disconnected,
+          profilePic: p.profilePic
         })),
         lastAction: {
           type: 'card_drawn',
@@ -183,7 +187,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
                 id: player.id,
                 name: player.name,
                 cardsCount: player.hand.length,
-                disconnected: player.disconnected
+                disconnected: player.disconnected,
+                profilePic: player.profilePic
               })),
               lastAction: {
                 type: 'card_drawn',
@@ -213,7 +218,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
               id: p.id,
               name: p.name,
               cardsCount: p.hand.length,
-              disconnected: p.disconnected
+              disconnected: p.disconnected,
+              profilePic: p.profilePic
             })),
             lastAction: {
               type: 'turn_passed',
@@ -245,7 +251,6 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
       const player = room.players.find(p => p.id === socket.id)!;
       console.log(`Player ${player.name} passed their turn in room ${roomId}`);
 
-      // Notifier tous les joueurs
       io.to(roomId).emit(SocketEvents.GAME_STATE_UPDATE, {
         gameState: {
           currentPlayerIndex: room.gameState.currentPlayerIndex,
@@ -258,7 +263,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
           id: p.id,
           name: p.name,
           cardsCount: p.hand.length,
-          disconnected: p.disconnected
+          disconnected: p.disconnected,
+          profilePic: p.profilePic
         })),
         lastAction: {
           type: 'turn_passed',
@@ -365,7 +371,8 @@ export function registerGameHandlers(socket: Socket, io: Server, gameManager: Ga
                 id: player.id,
                 name: player.name,
                 cardsCount: player.hand.length,
-                disconnected: player.disconnected
+                disconnected: player.disconnected,
+                profilePic: player.profilePic
               })),
               lastAction: {
                 type: 'uno_penalty',

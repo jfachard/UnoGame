@@ -30,6 +30,14 @@ export interface GameState {
   lastPlayedCard: Card;
 }
 
+export interface GameStateClient {
+  currentPlayerIndex: number;
+  direction: 1 | -1;
+  lastPlayedCard: Card;
+  deckCount: number;
+  discardPileCount: number;
+}
+
 // ===== GAME ROOM =====
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
 

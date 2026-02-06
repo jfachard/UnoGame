@@ -34,33 +34,34 @@ export class MainMenu extends Scene {
 
     console.log('Socket ID in MainMenu:', this.socket.id);
 
+    // Background
     this.add.image(width / 2, height / 2, 'background');
-    this.add.image(width / 2, 150, 'logo').setScale(0.38);
-
-    // === Section CREATE ROOM (gauche) ===
     
-    this.add.text(width / 2 - 300, height / 2 - 120, 'Create Room', {
-      fontSize: '28px',
+    // Logo centré en haut
+    this.add.image(width / 2, 120, 'logo').setScale(0.38);
+
+    const centerX = width / 2;
+    const startY = 260; // Position fixe au lieu de height/2 - 120
+
+    this.add.text(centerX, startY, 'Your Name:', {
+      fontSize: '22px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    this.add.text(width / 2 - 300, height / 2 - 70, 'Your Name:', {
-      fontSize: '20px',
-      color: '#ffffff',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    this.playerNameInput = this.add.dom(width / 2 - 300, height / 2 - 30).createFromHTML(`
+    // Pour playerNameInput
+    this.playerNameInput = this.add.dom(centerX, startY + 45).createFromHTML(`
       <input 
         type="text" 
         id="playerNameInput"
         placeholder="Enter your name" 
         maxlength="20"
         style="
-          width: 280px;
-          padding: 10px 15px;
-          font-size: 16px;
+          display: block;
+          margin: 0 auto;
+          width: 320px;
+          padding: 12px 15px;
+          font-size: 18px;
           border: 3px solid #B84855;
           border-radius: 8px;
           text-align: center;
@@ -78,19 +79,22 @@ export class MainMenu extends Scene {
       this.playerName = (e.target as HTMLInputElement).value;
     });
 
-    this.add.text(width / 2 - 300, height / 2 + 20, 'Max Players:', {
-      fontSize: '20px',
+    this.add.text(centerX, startY + 110, 'Max Players:', {
+      fontSize: '22px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    this.maxPlayersSelect = this.add.dom(width / 2 - 300, height / 2 + 60).createFromHTML(`
+    // Pour maxPlayersSelect
+    this.maxPlayersSelect = this.add.dom(centerX, startY + 155).createFromHTML(`
       <select 
         id="maxPlayersSelect"
         style="
-          width: 280px;
-          padding: 10px 15px;
-          font-size: 16px;
+          display: block;
+          margin: 0 auto;
+          width: 320px;
+          padding: 12px 15px;
+          font-size: 18px;
           border: 3px solid #B84855;
           border-radius: 8px;
           text-align: center;
@@ -117,70 +121,25 @@ export class MainMenu extends Scene {
       this.maxPlayers = parseInt((e.target as HTMLSelectElement).value);
     });
 
-    const createButton = this.add.image(
-      width / 2 - 300,
-      height / 2 + 130,
-      'createButton'
-    ).setInteractive({ useHandCursor: true }).setScale(1.3);
-
-    createButton.on('pointerover', () => createButton.setTint(0xcccccc));
-    createButton.on('pointerout', () => createButton.clearTint());
-    createButton.on('pointerdown', () => this.createRoom());
-
-    // === Section JOIN ROOM (droite) ===
-    
-    this.add.text(width / 2 + 300, height / 2 - 120, 'Join Room', {
-      fontSize: '28px',
+    this.add.text(centerX, startY + 220, 'Room ID :', {
+      fontSize: '22px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    this.add.text(width / 2 + 300, height / 2 - 70, 'Your Name:', {
-      fontSize: '20px',
-      color: '#ffffff',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    this.add.dom(width / 2 + 300, height / 2 - 30).createFromHTML(`
-      <input 
-        type="text" 
-        id="playerNameInputJoin"
-        placeholder="Enter your name" 
-        maxlength="20"
-        style="
-          width: 280px;
-          padding: 10px 15px;
-          font-size: 16px;
-          border: 3px solid #B84855;
-          border-radius: 8px;
-          text-align: center;
-          background: rgba(255, 255, 255, 0.95);
-          color: #333;
-          font-family: Arial, sans-serif;
-          font-weight: bold;
-          outline: none;
-        "
-      />
-    `).node.querySelector('#playerNameInputJoin')?.addEventListener('input', (e) => {
-      this.playerName = (e.target as HTMLInputElement).value;
-    });
-
-    this.add.text(width / 2 + 300, height / 2 + 20, 'Room ID:', {
-      fontSize: '20px',
-      color: '#ffffff',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    this.roomIdInput = this.add.dom(width / 2 + 300, height / 2 + 60).createFromHTML(`
+    // Pour roomIdInput
+    this.roomIdInput = this.add.dom(centerX, startY + 265).createFromHTML(`
       <input 
         type="text" 
         id="roomIdInput"
-        placeholder="Enter room ID" 
+        placeholder="Enter room ID to join" 
         maxlength="30"
         style="
-          width: 280px;
-          padding: 10px 15px;
-          font-size: 16px;
+          display: block;
+          margin: 0 auto;
+          width: 320px;
+          padding: 12px 15px;
+          font-size: 18px;
           border: 3px solid #B84855;
           border-radius: 8px;
           text-align: center;
@@ -198,11 +157,18 @@ export class MainMenu extends Scene {
       this.roomIdToJoin = (e.target as HTMLInputElement).value;
     });
 
-    const joinButton = this.add.image(
-      width / 2 + 300,
-      height / 2 + 130,
-      'joinButton'
-    ).setInteractive({ useHandCursor: true }).setScale(1.3);
+    // Boutons CREATE et JOIN
+    const createButton = this.add.image(centerX - 140, startY + 360, 'createButton')
+      .setInteractive({ useHandCursor: true })
+      .setScale(1.3);
+
+    createButton.on('pointerover', () => createButton.setTint(0xcccccc));
+    createButton.on('pointerout', () => createButton.clearTint());
+    createButton.on('pointerdown', () => this.createRoom());
+
+    const joinButton = this.add.image(centerX + 140, startY + 360, 'joinButton')
+      .setInteractive({ useHandCursor: true })
+      .setScale(1.3);
 
     joinButton.on('pointerover', () => joinButton.setTint(0xcccccc));
     joinButton.on('pointerout', () => joinButton.clearTint());

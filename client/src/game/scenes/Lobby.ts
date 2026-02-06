@@ -130,6 +130,8 @@ export class Lobby extends Scene {
       this.scene.start("Game", {
         roomId: this.roomId,
         gameState: data.gameState,
+        hand: data.hand,
+        players: data.players
       });
     });
 

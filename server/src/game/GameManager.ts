@@ -362,7 +362,20 @@ export class GameManager {
       console.log(
         `Player ${room.players[nextIndex].id} is disconnected, skipping...`,
       );
-      this.drawCards(room, nextIndex, this.DISCONNECT_PENALTY_CARDS);
+      
+      // Check if all players are disconnected to prevent infinite recursion
+      const allDisconnected = room.players.every(p => p.disconnected);
+      if (allDisconnected) {
+        console.log('All players disconnected, ending game');
+        room.status = 'finished';
+        return;
+      }
+      
+      // Only draw penalty cards if deck/discard pile has enough cards
+      if (room.gameState.deck.length > 0 || room.gameState.discardPile.length > 1) {
+        this.drawCards(room, nextIndex, this.DISCONNECT_PENALTY_CARDS);
+      }
+      
       this.nextTurn(room);
     }
   }
