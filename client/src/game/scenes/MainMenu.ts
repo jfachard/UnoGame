@@ -37,6 +37,15 @@ export class MainMenu extends Scene {
     // Background
     this.add.image(width / 2, height / 2, 'background');
     
+    // Background Music
+    let bgMusic = this.sound.get('bgm');
+    if (!bgMusic) {
+      bgMusic = this.sound.add('bgm', { loop: true, volume: 0.03 });
+      bgMusic.play();
+    } else if (!bgMusic.isPlaying) {
+      bgMusic.play();
+    }
+    
     // Logo centré en haut
     this.add.image(width / 2, 120, 'logo').setScale(0.38);
 

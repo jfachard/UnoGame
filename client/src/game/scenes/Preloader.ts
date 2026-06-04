@@ -28,6 +28,7 @@ export class Preloader extends Scene
         this.load.setPath('assets');
 
         this.load.image('logo', 'Carta_logo.png');
+        this.load.audio('bgm', 'sound_music/Dealer_s_Choice.mp3');
     }
 
     async create ()

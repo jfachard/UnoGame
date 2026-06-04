@@ -262,7 +262,7 @@ export class Game extends Scene {
 
     this.myHand.forEach((card, index) => {
       const cardX = startX + index * CARD_CONFIG.SPACING;
-      this.createInteractiveHandCard(cardX, handY, card);
+      this.createInteractiveHandCard(cardX, handY, card, index);
     });
   }
 
@@ -270,11 +270,19 @@ export class Game extends Scene {
     return (width - (this.myHand.length * CARD_CONFIG.SPACING)) / 2 + CARD_CONFIG.SPACING / 2;
   }
 
-  private createInteractiveHandCard(x: number, y: number, card: Card) {
+  private createInteractiveHandCard(x: number, y: number, card: Card, index: number) {
     const cardKey = this.getCardImageKey(card);
     const cardImage = this.add.image(x, y, cardKey)
-      .setScale(CARD_CONFIG.HAND_SCALE)
+      .setScale(0)
       .setInteractive({ useHandCursor: true });
+
+    this.tweens.add({
+      targets: cardImage,
+      scaleX: CARD_CONFIG.HAND_SCALE,
+      scaleY: CARD_CONFIG.HAND_SCALE,
+      duration: 300,
+      ease: 'Back.out'
+    });
 
     this.addCardHoverEffect(cardImage, y);
     cardImage.on('pointerdown', () => {
@@ -314,18 +322,25 @@ export class Game extends Scene {
   }
 
   private drawPlayerCard(x: number, y: number, player: PlayerPublicInfo) {
-    this.add.rectangle(x, y, 180, 120, 0x34495e, 0.8)
-      .setStrokeStyle(2, 0xffffff);
+    const isDisconnected = player.disconnected;
+    const bgColor = isDisconnected ? 0x7f8c8d : 0x34495e;
+
+    this.add.rectangle(x, y, 180, 120, bgColor, 0.8)
+      .setStrokeStyle(2, isDisconnected ? 0xff0000 : 0xffffff);
 
     if (player.profilePic) {
-      this.add.image(x, y - 30, `profile_pic${player.profilePic}`)
+      const pic = this.add.image(x, y - 30, `profile_pic${player.profilePic}`)
         .setScale(0.15);
+      if (isDisconnected) {
+        pic.setTint(0x555555);
+      }
     }
 
-    this.add.text(x, y + 20, player.name, {
+    this.add.text(x, y + 20, player.name + (isDisconnected ? '\n(Offline)' : ''), {
       fontSize: '16px',
-      color: '#ffffff',
-      fontStyle: 'bold'
+      color: isDisconnected ? '#ffcccc' : '#ffffff',
+      fontStyle: 'bold',
+      align: 'center'
     }).setOrigin(0.5);
 
     this.add.text(x, y + 45, `${player.cardsCount} cards`, {
@@ -480,8 +495,7 @@ export class Game extends Scene {
 
   private handleGameOver(data: any) {
     console.log('Game over:', data);
-    alert(`🏆 ${data.winnerName} won the game!`);
-    this.scene.start('MainMenu');
+    this.scene.start('GameOver', { winnerName: data.winnerName });
   }
 
   private handleInvalidMove(data: any) {
